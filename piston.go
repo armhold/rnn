@@ -29,8 +29,8 @@ func (p *Piston) Parse(src string) {
 		panic(err)
 	}
 
-	// Print the AST.
-	ast.Print(fset, f)
+	// Print the AST to /dev/null
+	ast.Fprint(ioutil.Discard, fset, f, ast.NotNilFilter)
 }
 
 func (p *Piston) SaveAndCompile(filename, content string) error {
