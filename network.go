@@ -32,22 +32,40 @@ func NewNetwork(input string) *Network {
 	result := &Network{}
 	result.charToIndex, result.indexToChar = mapInput(input)
 	result.VocabSize = len(result.charToIndex)
-
 	result.HiddenBias = mat64.NewDense(HiddenSize, 1, nil)
+
+	result.InputToHiddenWeights = randomMatrix(HiddenSize, result.VocabSize)
+	result.InputToHiddenWeights.Scale(0.01, result.InputToHiddenWeights)
+
+	result.HiddenToHiddenWeights = randomMatrix(HiddenSize, HiddenSize)
+	result.HiddenToHiddenWeights.Scale(0.01, result.HiddenToHiddenWeights)
+
+	result.HiddenToOutputWeights = randomMatrix(result.VocabSize, HiddenSize)
+	result.HiddenToOutputWeights.Scale(0.01, result.HiddenToOutputWeights)
+
 
 	return result
 }
+
+
+func randomMatrix(rows, cols int) *mat64.Dense {
+	result := mat64.NewDense(rows, cols, nil)
+	randomize(result)
+
+	return result
+}
+
+
 
 func randomize(m *mat64.Dense) {
 	r, c := m.Dims()
 
 	for row := 0; row < r; row++ {
 		for col := 0; col < c; col++ {
-			m.Set(row, col, rand.Float64())
+			m.Set(row, col, rand.NormFloat64())
 		}
 
 	}
-
 }
 
 func mapInput(input string) (charToIndex map[rune]int, indexToChar map[int]rune) {
