@@ -1,19 +1,79 @@
 package piston
 
 import (
+	"log"
 	"testing"
+	"time"
 )
 
-func TestProgs(t *testing.T) {
+func TestSaveAndCompile(t *testing.T) {
+	start := time.Now()
+
 	piston := &Piston{}
 
-	err := piston.Compile("samples", "prog1.go")
+	p1 :=
+		`package samples
+
+import "fmt"
+
+func main() {
+	doIt()
+}
+
+
+func doIt() {
+	fmt.Printf("Hello, World!\n")
+}
+`
+
+	err := piston.SaveAndCompile("prog.go", p1)
+
 	if err != nil {
-		t.Fatalf("prog1.go should succeed: %s", err)
+		t.Fatalf("should succeed: %s", err)
+	}
+	dur := time.Since(start)
+	log.Printf("dur: %s\n", dur)
+
+	p2 :=
+		`package samples
+
+import "fmt"
+
+func main() {
+	doIt()
+}
+
+
+func doIt() {
+	fmt.Printf("Hello, World!\n")
+}
+
+x
+`
+	err = piston.SaveAndCompile("prog.go", p2)
+	if err == nil {
+		t.Fatalf("should fail: %s", err)
 	}
 
-	err = piston.Compile("samples", "prog2.go")
-	if err == nil {
-		t.Fatalf("prog1.go should fail: %s", err)
+}
+
+func TestParse(t *testing.T) {
+	piston := &Piston{}
+
+	src :=
+		`package samples
+
+	import "fmt"
+
+	func main() {
+		doIt()
 	}
+
+
+	func doIt() {
+		fmt.Printf("Hello, World!\n")
+	}
+	`
+
+	piston.Parse(src)
 }
