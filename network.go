@@ -22,10 +22,16 @@ type Network struct {
 	HiddenToOutputWeights *mat64.Dense
 	HiddenBias            *mat64.Dense
 	OutputBias            *mat64.Dense
+
+	charToIndex           map[rune]int
+	indexToChar           map[int]rune
+	VocabSize             int
 }
 
 func NewNetwork(input string) *Network {
 	result := &Network{}
+	result.charToIndex, result.indexToChar = mapInput(input)
+	result.VocabSize = len(result.charToIndex)
 
 	result.HiddenBias = mat64.NewDense(HiddenSize, 1, nil)
 

@@ -1,17 +1,16 @@
 package piston
 
 import (
-	"log"
 	"reflect"
 	"testing"
 )
 
 func TestNetwork(t *testing.T) {
-
 	n := NewNetwork("mary had a little lamb")
 
-	log.Printf("%+v\n", n)
-
+	if n.VocabSize != 12 {
+		t.Fatalf("VocabSize expected: 12, got: %d", n.VocabSize)
+	}
 }
 
 func TestMapInput(t *testing.T) {
