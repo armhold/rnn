@@ -108,6 +108,7 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) {
 	//
 	for t, _ := range inputs {
 		// encode in 1-of-k
+		//
 		xs[t] = mat64.NewDense(n.VocabSize, 1, nil)
 		xs[t].Set(inputs[t], 0, 1)
 
@@ -117,13 +118,11 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) {
 		log.Printf("ps: %+v", ps)
 		log.Printf("loss: %+v", loss)
 		log.Printf("t: %d", t)
-
 		log.Printf("n.Wxh: %+v", n.Wxh)
-		//log.Printf("xs.ColView(%d): %+v", t, xs.ColView(t))
-		//log.Printf("xs.RowView(%d): %+v", t, xs.RowView(t))
 
-		// 100x14 dot 14x1
 
+		// hidden state
+		//
 		dot1 := &mat64.Dense{}
 		dot1.Mul(n.Wxh, xs[t])
 
@@ -134,16 +133,21 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) {
 
 		log.Printf("dot2: %+v", dot2)
 
-		sum := &mat64.Dense{}
-		sum.Add(dot1, dot2)
-		log.Printf("sum: %+v", sum)
+		hs[t] = &mat64.Dense{}
+		hs[t].Add(dot1, dot2)
+		hs[t].Add(hs[t], n.bh)
+		log.Printf("hs[t]: %+v", hs[t])
 
-		sum.Add(sum, n.bh)
-		sum.Apply(func(i, j int, v float64) float64 {
+		hs[t].Apply(func(i, j int, v float64) float64 {
 			return math.Tanh(v)
-		}, sum)
+		}, hs[t])
 
-		hs[t] = sum
+		// unnormalized log probabilities for next chars
+		//
+
+		ys[t] = &mat64.Dense{}
+		ys[t].Mul(n.Why, hs[t])
+		ys[t].Add(ys[t], n.by)
 	}
 }
 
