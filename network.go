@@ -4,6 +4,7 @@ import (
 	"github.com/gonum/matrix/mat64"
 	"math/rand"
 	"time"
+	"log"
 )
 
 func init() {
@@ -17,15 +18,15 @@ const (
 )
 
 type Network struct {
-	InputToHiddenWeights  *mat64.Dense
-	HiddenToHiddenWeights *mat64.Dense
-	HiddenToOutputWeights *mat64.Dense
-	HiddenBias            *mat64.Dense
-	OutputBias            *mat64.Dense
+	Wxh         *mat64.Dense  // input to hidden weights
+	Whh         *mat64.Dense  // hidden to hidden weights
+	Why         *mat64.Dense  // hidden to output weights
+	HiddenBias  *mat64.Dense
+	OutputBias  *mat64.Dense
 
-	charToIndex           map[rune]int
-	indexToChar           map[int]rune
-	VocabSize             int
+	charToIndex map[rune]int
+	indexToChar map[int]rune
+	VocabSize   int
 }
 
 func NewNetwork(input string) *Network {
@@ -34,18 +35,91 @@ func NewNetwork(input string) *Network {
 	result.VocabSize = len(result.charToIndex)
 	result.HiddenBias = mat64.NewDense(HiddenSize, 1, nil)
 
-	result.InputToHiddenWeights = randomMatrix(HiddenSize, result.VocabSize)
-	result.InputToHiddenWeights.Scale(0.01, result.InputToHiddenWeights)
+	result.Wxh = randomMatrix(HiddenSize, result.VocabSize)
+	result.Wxh.Scale(0.01, result.Wxh)
 
-	result.HiddenToHiddenWeights = randomMatrix(HiddenSize, HiddenSize)
-	result.HiddenToHiddenWeights.Scale(0.01, result.HiddenToHiddenWeights)
+	result.Whh = randomMatrix(HiddenSize, HiddenSize)
+	result.Whh.Scale(0.01, result.Whh)
 
-	result.HiddenToOutputWeights = randomMatrix(result.VocabSize, HiddenSize)
-	result.HiddenToOutputWeights.Scale(0.01, result.HiddenToOutputWeights)
+	result.Why = randomMatrix(result.VocabSize, HiddenSize)
+	result.Why.Scale(0.01, result.Why)
 
+	result.HiddenBias = mat64.NewDense(HiddenSize, 1, nil)
+	result.OutputBias = mat64.NewDense(result.VocabSize, 1, nil)
 
 	return result
 }
+
+func (n *Network) Run(input string) {
+	runes := []rune(input)
+	inputLen := len(runes)
+
+	iter := 0
+	p := 0
+
+	var hprev *mat64.Dense
+	inputs := make([]int, SequenceLength)
+	targets := make([]int, SequenceLength)
+
+	for {
+		if p + SequenceLength + 1 >= inputLen || iter == 0 {
+			// TODO: hprev = np.zeros()... etc
+			p = 0
+
+			hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
+		}
+
+
+		for i := 0; i < SequenceLength + 1; i++ {
+			inputs[i] = n.charToIndex[runes[p + i]]
+			targets[i] = n.charToIndex[runes[p + i + 1]]
+		}
+
+		log.Printf("inputs: %q, p: %d", inputs, p)
+		n.LossFunc(inputs, targets, hprev)
+
+
+		p = p + SequenceLength
+		iter += 1
+	}
+}
+
+
+
+func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) {
+	charCount := len(inputs)
+
+	xs := mat64.NewDense(charCount, n.VocabSize, nil)
+	hs := mat64.NewDense(charCount, )
+
+	var loss float64
+
+	// forward pass
+	//
+	for t, _ := range inputs {
+		// encode in 1-of-k
+		xs.Set(t, inputs[t], 1)
+
+		xst := xs.RowView(t)
+		_, c := n.Wxh.Dims()
+		r, _ := xst.Dims()
+
+		l := mat64.NewDense(c, r, nil)
+		l.Mul(n.Wxh, xst)
+
+		_, c = n.Whh.Dims()
+		r, _ = hs.RowView(t-1)
+
+
+		r:= mat64.NewDense(c, r, nil)
+
+	}
+
+
+
+}
+
+
 
 
 func randomMatrix(rows, cols int) *mat64.Dense {

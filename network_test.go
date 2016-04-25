@@ -12,6 +12,10 @@ func TestNetwork(t *testing.T) {
 	if n.VocabSize != 14 {
 		t.Fatalf("VocabSize expected: 12, got: %d", n.VocabSize)
 	}
+
+
+
+	n.Run("Mary had a little lamb, its fleece was white as snow. Everywhere that Mary went, the lamb was sure to go.")
 }
 
 // testing my understanding of how to multiply a mat64 matrix by a scalar
