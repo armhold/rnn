@@ -59,6 +59,7 @@ func (n *Network) Run(input string) {
 
 	//var hprev *mat64.Dense
 	var hprev []float64
+
 	inputs := make([]int, SequenceLength)
 	targets := make([]int, SequenceLength)
 
@@ -67,8 +68,8 @@ func (n *Network) Run(input string) {
 			// TODO: hprev = np.zeros()... etc
 			p = 0
 
-			//hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
 			hprev = make([]float64, HiddenSize) // reset RNN memory
+			//hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
 		}
 
 
@@ -91,16 +92,13 @@ func (n *Network) Run(input string) {
 func (n *Network) LossFunc(inputs, targets []int, hprev []float64) {
 	charCount := len(inputs)
 
-	//var xs, hs, ys, ps [][]float64
+	xs := mat64.NewDense(charCount, n.VocabSize, nil)
+	hs := mat64.NewDense(charCount, len(hprev), nil)
+	ys := mat64.NewDense(charCount, n.VocabSize, nil)  // # cols might be wrong
+	ps := mat64.NewDense(charCount, n.VocabSize, nil)  // # cols might be wrong
 
-	xs := make([][]float64, charCount)
-	hs := make([][]float64, charCount)
-	ys := make([][]float64, charCount)
-	ps := make([][]float64, charCount)
-
-	//hs[len(hs) - 1] = mat64.DenseCopyOf(hprev.Copy)
-	hs[len(hs) - 1] = make([]float64, len(hprev))
-	copy(hs[len(hs)-1], hprev)
+	r, _ := hs.Dims()
+	hs.SetRow(r - 1, hprev)
 
 	var loss float64
 
@@ -108,8 +106,7 @@ func (n *Network) LossFunc(inputs, targets []int, hprev []float64) {
 	//
 	for t, _ := range inputs {
 		// encode in 1-of-k
-		xs[t] = make([]float64, n.VocabSize)
-		xs[t][inputs[t]] = 1
+		xs.Set(t, inputs[t], 1)
 
 		log.Printf("xs: %+v", xs)
 		log.Printf("hs: %+v", hs)
