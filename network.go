@@ -58,8 +58,8 @@ func (n *Network) Run(input string) {
 	iter := 0
 	p := 0
 
-	//var hprev *mat64.Dense
-	var hprev []float64
+	var hprev *mat64.Dense
+	//var hprev []float64
 
 	inputs := make([]int, SequenceLength)
 	targets := make([]int, SequenceLength)
@@ -69,8 +69,8 @@ func (n *Network) Run(input string) {
 			// TODO: hprev = np.zeros()... etc
 			p = 0
 
-			hprev = make([]float64, HiddenSize) // reset RNN memory
-			//hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
+			//hprev = make([]float64, HiddenSize) // reset RNN memory
+			hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
 		}
 
 
@@ -90,16 +90,17 @@ func (n *Network) Run(input string) {
 
 
 
-func (n *Network) LossFunc(inputs, targets []int, hprev []float64) {
+func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) {
 	charCount := len(inputs)
 
-	xs := mat64.NewDense(charCount, n.VocabSize, nil)
-	hs := mat64.NewDense(charCount, len(hprev), nil)
-	ys := mat64.NewDense(charCount, n.VocabSize, nil)  // # cols might be wrong
-	ps := mat64.NewDense(charCount, n.VocabSize, nil)  // # cols might be wrong
+	log.Printf("charCount: %d", charCount)
 
-	r, _ := hs.Dims()
-	hs.SetRow(r - 1, hprev)
+	xs := make(map[int]*mat64.Dense)
+	hs := make(map[int]*mat64.Dense)
+	ys := make(map[int]*mat64.Dense)
+	ps := make(map[int]*mat64.Dense)
+
+	hs[-1] = mat64.DenseCopyOf(hprev)
 
 	var loss float64
 
@@ -107,7 +108,8 @@ func (n *Network) LossFunc(inputs, targets []int, hprev []float64) {
 	//
 	for t, _ := range inputs {
 		// encode in 1-of-k
-		xs.Set(t, inputs[t], 1)
+		xs[t] = mat64.NewDense(n.VocabSize, 1, nil)
+		xs[t].Set(inputs[t], 0, 1)
 
 		log.Printf("xs: %+v", xs)
 		log.Printf("hs: %+v", hs)
@@ -118,23 +120,17 @@ func (n *Network) LossFunc(inputs, targets []int, hprev []float64) {
 
 		log.Printf("n.Wxh: %+v", n.Wxh)
 		//log.Printf("xs.ColView(%d): %+v", t, xs.ColView(t))
-		log.Printf("xs.RowView(%d): %+v", t, xs.RowView(t))
+		//log.Printf("xs.RowView(%d): %+v", t, xs.RowView(t))
 
 		// 100x14 dot 14x1
 
 		dot1 := &mat64.Dense{}
-		dot1.Mul(n.Wxh, xs.RowView(t))
+		dot1.Mul(n.Wxh, xs[t])
 
 		log.Printf("dot1: %+v", dot1)
 
 		dot2 := &mat64.Dense{}
-		tMinus1 := t - 1
-
-		if tMinus1 < 0 {
-			r, _ := hs.Dims()
-			tMinus1 = r - 1
-		}
-		dot2.Mul(n.Whh, hs.RowView(tMinus1))
+		dot2.Mul(n.Whh, hs[t-1])
 
 		log.Printf("dot2: %+v", dot2)
 
@@ -147,6 +143,7 @@ func (n *Network) LossFunc(inputs, targets []int, hprev []float64) {
 			return math.Tanh(v)
 		}, sum)
 
+		hs[t] = sum
 	}
 }
 
