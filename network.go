@@ -144,10 +144,27 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) {
 
 		// unnormalized log probabilities for next chars
 		//
-
 		ys[t] = &mat64.Dense{}
 		ys[t].Mul(n.Why, hs[t])
 		ys[t].Add(ys[t], n.by)
+
+
+		// probabilities for next chars
+		//
+		exp := &mat64.Dense{}
+		exp.Apply(func(i, j int, v float64) float64 {
+			return math.Exp(v)
+		}, ys[t])
+
+		sum := mat64.Sum(exp)
+
+		ps[t] = &mat64.Dense{}
+		ps[t].Apply(func(i, j int, v float64) float64 {
+			return v / sum
+		}, exp)
+
+
+		loss += math.Log(ps[t].At(targets[t], 0))
 	}
 }
 
