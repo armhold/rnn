@@ -123,14 +123,10 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) {
 
 		// hidden state
 		//
-		dot1 := &mat64.Dense{}
-		dot1.Mul(n.Wxh, xs[t])
-
+		dot1 := dot(n.Wxh, xs[t])
 		log.Printf("dot1: %+v", dot1)
 
-		dot2 := &mat64.Dense{}
-		dot2.Mul(n.Whh, hs[t-1])
-
+		dot2 := dot(n.Whh, hs[t-1])
 		log.Printf("dot2: %+v", dot2)
 
 		hs[t] = &mat64.Dense{}
@@ -180,15 +176,25 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) {
 		dy := mat64.DenseCopyOf(ps[t])
 		dy.Set(targets[t], 0, dy.At(targets[t], 0) - 1) // backprop into y
 
-		mult := &mat64.Dense{}
-		mult.Mul(dy, hs[t].T())
-		dWhy.Add(dWhy, mult)
+		dWhy.Add(dWhy, dot(dy, hs[t].T()))
 		dby.Add(dby, dy)
 
-		dh := &mat64.Dense{}   // backprop into h
-		dh.Mul(n.Why.T(), dy)
+		dh := dot(n.Why.T(), dy)   // backprop into h
 		dh.Add(dh, dhnext)
 
+
+		// backprop through tanh nonlinearity
+		dhraw := &mat64.Dense{}
+		dhraw.MulElem(hs[t], hs[t])
+		dhraw.Apply(func(i, j int, v float64) float64 {
+			return 1 - v
+		}, dhraw)
+		dhraw.MulElem(dhraw, dh)
+
+		dbh.Add(dbh, dhraw)
+		dWxh.Add(dWxh, dot(dhraw, xs[t].T()))
+		dWhh.Add(dWhh, dot(dhraw, hs[t - 1].T()))
+		dhnext = dot(n.Whh.T(), dhraw)
 	}
 
 
@@ -238,6 +244,13 @@ func mapInput(input string) (charToIndex map[rune]int, indexToChar map[int]rune)
 
 	return charToIndex, indexToChar
 }
+
+func dot(a, b mat64.Matrix) *mat64.Dense {
+	result := &mat64.Dense{}
+	result.Mul(a, b)
+	return result
+}
+
 
 func zerosLike(a mat64.Matrix) *mat64.Dense {
 	r, c := a.Dims()
