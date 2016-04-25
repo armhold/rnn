@@ -164,8 +164,39 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) {
 		}, exp)
 
 
+		// softmax (cross-entropy loss)
 		loss += math.Log(ps[t].At(targets[t], 0))
 	}
+
+	//  backward pass: compute gradients going backwards
+	//
+	dWxh, dWhh, dWhy := zerosLike(n.Wxh), zerosLike(n.Whh), zerosLike(n.Why)
+	dbh, dby := zerosLike(n.bh), zerosLike(n.by)
+	dhnext := zerosLike(hs[0])
+
+	log.Print(dWxh, dWhh, dWhy, dbh, dby, dhnext)
+
+	for t := len(inputs) - 1; t >= 0; t-- {
+		dy := mat64.DenseCopyOf(ps[t])
+		dy.Set(targets[t], 0, dy.At(targets[t], 0) - 1) // backprop into y
+
+		mult := &mat64.Dense{}
+		mult.Mul(dy, hs[t].T())
+		dWhy.Add(dWhy, mult)
+		dby.Add(dby, dy)
+
+		dh := &mat64.Dense{}   // backprop into h
+		dh.Mul(n.Why.T(), dy)
+		dh.Add(dh, dhnext)
+
+	}
+
+
+
+
+
+
+
 }
 
 
@@ -206,4 +237,9 @@ func mapInput(input string) (charToIndex map[rune]int, indexToChar map[int]rune)
 	}
 
 	return charToIndex, indexToChar
+}
+
+func zerosLike(a mat64.Matrix) *mat64.Dense {
+	r, c := a.Dims()
+	return mat64.NewDense(r, c, nil)
 }
