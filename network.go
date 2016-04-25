@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 	"log"
+	"math"
 )
 
 func init() {
@@ -114,6 +115,38 @@ func (n *Network) LossFunc(inputs, targets []int, hprev []float64) {
 		log.Printf("ps: %+v", ps)
 		log.Printf("loss: %+v", loss)
 		log.Printf("t: %d", t)
+
+		log.Printf("n.Wxh: %+v", n.Wxh)
+		//log.Printf("xs.ColView(%d): %+v", t, xs.ColView(t))
+		log.Printf("xs.RowView(%d): %+v", t, xs.RowView(t))
+
+		// 100x14 dot 14x1
+
+		dot1 := &mat64.Dense{}
+		dot1.Mul(n.Wxh, xs.RowView(t))
+
+		log.Printf("dot1: %+v", dot1)
+
+		dot2 := &mat64.Dense{}
+		tMinus1 := t - 1
+
+		if tMinus1 < 0 {
+			r, _ := hs.Dims()
+			tMinus1 = r - 1
+		}
+		dot2.Mul(n.Whh, hs.RowView(tMinus1))
+
+		log.Printf("dot2: %+v", dot2)
+
+		sum := &mat64.Dense{}
+		sum.Add(dot1, dot2)
+		log.Printf("sum: %+v", sum)
+
+		sum.Add(sum, n.bh)
+		sum.Apply(func(i, j int, v float64) float64 {
+			return math.Tanh(v)
+		}, sum)
+
 	}
 }
 
