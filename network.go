@@ -197,12 +197,8 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) {
 		dhnext = dot(n.Whh.T(), dhraw)
 	}
 
-
-
-
-
-
-
+	// clip to mitigate exploding gradients
+	clipTo(-5, 5, dWxh, dWhh, dWhy, dbh, dby)
 }
 
 
@@ -255,4 +251,18 @@ func dot(a, b mat64.Matrix) *mat64.Dense {
 func zerosLike(a mat64.Matrix) *mat64.Dense {
 	r, c := a.Dims()
 	return mat64.NewDense(r, c, nil)
+}
+
+func clipTo(leftRange, rightRange float64, matrices ...*mat64.Dense) {
+	for _, m := range matrices {
+		m.Apply(func(i, j int, v float64) float64 {
+			if v < leftRange {
+				return leftRange
+			} else if v > rightRange {
+				return rightRange
+			}
+
+			return v
+		}, m)
+	}
 }
