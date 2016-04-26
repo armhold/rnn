@@ -161,7 +161,7 @@ func (n *Network) sample(h *mat64.Dense, seedIx, count int) []int {
 		r := rangeToArray(n.VocabSize)
 		ix := r[index]
 		//log.Printf("chose index %d -> %d", index, ix)
-		x := mat64.NewDense(n.VocabSize, 1, nil)
+		x = mat64.NewDense(n.VocabSize, 1, nil)
 		x.Set(ix, 0, 1)
 		ixes = append(ixes, ix)
 	}
