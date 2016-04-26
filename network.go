@@ -28,14 +28,15 @@ type Network struct {
 	bh          *mat64.Dense  // hidden bias
 	by          *mat64.Dense  // output bias
 
+	data        string
 	charToIndex map[rune]int
 	indexToChar map[int]rune
 	VocabSize   int
 }
 
 func NewNetwork(input string) *Network {
-	result := &Network{}
-	result.charToIndex, result.indexToChar = mapInput(input)
+	result := &Network{data: input}
+	result.charToIndex, result.indexToChar = mapInput(result.data)
 	result.VocabSize = len(result.charToIndex)
 	result.bh = mat64.NewDense(HiddenSize, 1, nil)
 
@@ -54,8 +55,8 @@ func NewNetwork(input string) *Network {
 	return result
 }
 
-func (n *Network) Run(input string) {
-	runes := []rune(input)
+func (n *Network) Run() {
+	runes := []rune(n.data)
 	inputLen := len(runes)
 
 	iter := 0
