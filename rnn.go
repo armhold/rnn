@@ -1,12 +1,12 @@
 package piston
 
 import (
+	discreterand "github.com/dgryski/go-discreterand"
 	"github.com/gonum/matrix/mat64"
 	"log"
 	"math"
 	"math/rand"
 	"time"
-	discreterand "github.com/dgryski/go-discreterand"
 )
 
 func init() {
@@ -26,11 +26,11 @@ type RNN struct {
 	bh  *mat64.Dense // hidden bias
 	by  *mat64.Dense // output bias
 
-	data        string
-	charToIndex map[rune]int
-	indexToChar map[int]rune
-	VocabSize   int
-	n           int // current iteration
+	data           string
+	charToIndex    map[rune]int
+	indexToChar    map[int]rune
+	VocabSize      int
+	n              int // current iteration
 	checkpointFile string
 }
 
@@ -49,7 +49,7 @@ func NewRNN(input, checkpointFile string) *RNN {
 	result.Why = randomMatrix(result.VocabSize, HiddenSize)
 	result.Why.Scale(0.01, result.Why)
 
-	result.bh = mat64.NewDense(HiddenSize, 1, nil) // hidden bias
+	result.bh = mat64.NewDense(HiddenSize, 1, nil)       // hidden bias
 	result.by = mat64.NewDense(result.VocabSize, 1, nil) // output bias
 
 	return result
@@ -200,7 +200,7 @@ func (r *RNN) Run() {
 		//log.Printf("inputs: %q, p: %d", inputs, p)
 
 		// sample from the model now and then
-		if r.n %100 == 0 {
+		if r.n%100 == 0 {
 			sample_ix := r.sample(hprev, inputs[0], 200)
 			chars := make([]rune, len(sample_ix))
 			for i, ix := range sample_ix {
@@ -211,21 +211,20 @@ func (r *RNN) Run() {
 			log.Print(s)
 		}
 
-		if r.n %1000 == 0 {
+		if r.n%1000 == 0 {
 			err := r.SaveTo(r.checkpointFile)
 			if err != nil {
 				log.Fatalf("unable to save checkpoint file: %s", err)
 			}
 		}
 
-
-			// forward seq_length characters through the net and fetch gradient
+		// forward seq_length characters through the net and fetch gradient
 		var loss float64
 		var dWxh, dWhh, dWhy, dbh, dby *mat64.Dense
 
 		loss, dWxh, dWhh, dWhy, dbh, dby, hprev = r.LossFunc(inputs, targets, hprev)
 		smooth_loss = smooth_loss*0.999 + loss*0.001
-		if r.n %100 == 0 {
+		if r.n%100 == 0 {
 			log.Printf("iter %d, loss: %f", r.n, smooth_loss) // print progress
 		}
 

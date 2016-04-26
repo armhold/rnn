@@ -1,9 +1,9 @@
 package piston
 
 import (
-	"testing"
 	"io/ioutil"
 	"reflect"
+	"testing"
 )
 
 func TestSaveload(t *testing.T) {

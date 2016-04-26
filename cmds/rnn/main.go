@@ -1,27 +1,23 @@
 package main
 
 import (
+	"flag"
 	"github.com/armhold/piston"
 	"io/ioutil"
 	"log"
-	"flag"
 	"os"
 )
 
 var (
-	cpFile string
+	cpFile    string
 	inputFile string
 )
-
 
 func init() {
 	flag.StringVar(&cpFile, "cp", "rnn.tmp", "specify checkpoint file")
 	flag.StringVar(&inputFile, "i", "input.txt", "specify input training file")
 	flag.Parse()
 }
-
-
-
 
 func main() {
 	inputBytes, err := ioutil.ReadFile(inputFile)

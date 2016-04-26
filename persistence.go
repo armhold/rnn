@@ -1,8 +1,8 @@
 package piston
 
 import (
-	"encoding/gob"
 	"bytes"
+	"encoding/gob"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -37,8 +37,6 @@ func (n *RNN) GobEncode() ([]byte, error) {
 	return b.Bytes(), err
 }
 
-
-
 // Implement GoDecoder
 func (n *RNN) GobDecode(data []byte) error {
 	b := bytes.NewBuffer(data)
@@ -51,7 +49,7 @@ func (n *RNN) GobDecode(data []byte) error {
 		if err == nil {
 			err = decoder.Decode(data)
 		}
-        }
+	}
 
 	decode(&n.Wxh)
 	decode(&n.Whh)
