@@ -175,7 +175,6 @@ func (r *RNN) Run() {
 	runes := []rune(r.data)
 	inputLen := len(runes)
 
-	r.n = 0
 	p := 0
 	mWxh, mWhh, mWhy := zerosLike(r.Wxh), zerosLike(r.Whh), zerosLike(r.Why)
 	mbh, mby := zerosLike(r.bh), zerosLike(r.by)                        // memory variables for Adagrad
@@ -188,7 +187,7 @@ func (r *RNN) Run() {
 
 	for {
 		// prepare inputs (we're sweeping from left to right in steps seq_length long)
-		if p+SequenceLength+1 >= inputLen || r.n == 0 {
+		if p+SequenceLength+1 >= inputLen || hprev == nil {
 			hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
 			p = 0                                      // go from start of data
 		}
@@ -197,7 +196,6 @@ func (r *RNN) Run() {
 			inputs[i] = r.charToIndex[runes[p+i]]
 			targets[i] = r.charToIndex[runes[p+i+1]]
 		}
-		//log.Printf("inputs: %q, p: %d", inputs, p)
 
 		// sample from the model now and then
 		if r.n%100 == 0 {

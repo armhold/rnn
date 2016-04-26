@@ -13,6 +13,7 @@ func TestSaveload(t *testing.T) {
 	}
 
 	rnn := NewRNN("Mary had a little lamb.", f.Name())
+	rnn.n = 400
 
 	rnn.SaveTo(f.Name())
 	restored, err := LoadFrom(f.Name())

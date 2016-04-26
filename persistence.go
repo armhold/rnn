@@ -11,7 +11,7 @@ import (
 // Implements GobDecoder. This is necessary because Network contains several unexported fields.
 // It would be easier to simply export them by changing to uppercase, but for comparison purposes,
 // I wanted to keep the field names the same between Go and the original Python code.
-func (n *RNN) GobEncode() ([]byte, error) {
+func (r *RNN) GobEncode() ([]byte, error) {
 	var b bytes.Buffer
 	encoder := gob.NewEncoder(&b)
 
@@ -24,21 +24,22 @@ func (n *RNN) GobEncode() ([]byte, error) {
 		}
 	}
 
-	encode(n.Wxh)
-	encode(n.Whh)
-	encode(n.Why)
-	encode(n.bh)
-	encode(n.by)
-	encode(n.data)
-	encode(n.charToIndex)
-	encode(n.indexToChar)
-	encode(n.VocabSize)
+	encode(r.Wxh)
+	encode(r.Whh)
+	encode(r.Why)
+	encode(r.bh)
+	encode(r.by)
+	encode(r.data)
+	encode(r.charToIndex)
+	encode(r.indexToChar)
+	encode(r.VocabSize)
+	encode(r.n)
 
 	return b.Bytes(), err
 }
 
 // Implement GoDecoder
-func (n *RNN) GobDecode(data []byte) error {
+func (r *RNN) GobDecode(data []byte) error {
 	b := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(b)
 
@@ -51,15 +52,16 @@ func (n *RNN) GobDecode(data []byte) error {
 		}
 	}
 
-	decode(&n.Wxh)
-	decode(&n.Whh)
-	decode(&n.Why)
-	decode(&n.bh)
-	decode(&n.by)
-	decode(&n.data)
-	decode(&n.charToIndex)
-	decode(&n.indexToChar)
-	decode(&n.VocabSize)
+	decode(&r.Wxh)
+	decode(&r.Whh)
+	decode(&r.Why)
+	decode(&r.bh)
+	decode(&r.by)
+	decode(&r.data)
+	decode(&r.charToIndex)
+	decode(&r.indexToChar)
+	decode(&r.VocabSize)
+	decode(&r.n)
 
 	return err
 }
