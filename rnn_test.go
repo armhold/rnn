@@ -7,7 +7,7 @@ import (
 )
 
 func TestNetwork(t *testing.T) {
-	r := NewRNN("Mary had a little lamb, its fleece was white as snow. Everywhere that Mary went, the lamb was sure to go.")
+	r := NewRNN("Mary had a little lamb, its fleece was white as snow. Everywhere that Mary went, the lamb was sure to go.", "test.tmp")
 
 	expected := 25
 	if r.VocabSize != expected {

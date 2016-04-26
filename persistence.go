@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
 )
 
 // Implements GobDecoder. This is necessary because Network contains several unexported fields.
@@ -65,7 +66,9 @@ func (n *RNN) GobDecode(data []byte) error {
 	return err
 }
 
-func (n *RNN) Save(filePath string) error {
+func (n *RNN) SaveTo(filePath string) error {
+	log.Printf("Saving RNN to %s...", filePath)
+
 	buf := new(bytes.Buffer)
 	encoder := gob.NewEncoder(buf)
 
@@ -76,16 +79,18 @@ func (n *RNN) Save(filePath string) error {
 
 	err = ioutil.WriteFile(filePath, buf.Bytes(), 0644)
 	if err != nil {
-		return fmt.Errorf("error writing network to file: %s", err)
+		return fmt.Errorf("error writing RNN to file: %s: %s", filePath, err)
 	}
 
 	return nil
 }
 
-func LoadNetwork(filePath string) (*RNN, error) {
+func LoadFrom(filePath string) (*RNN, error) {
+	log.Printf("Loading RNN from %s...", filePath)
+
 	b, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading network file: %s", err)
+		return nil, fmt.Errorf("error reading RNN checkpoint file: %s", err)
 	}
 
 	decoder := gob.NewDecoder(bytes.NewBuffer(b))
@@ -93,8 +98,10 @@ func LoadNetwork(filePath string) (*RNN, error) {
 	var result RNN
 	err = decoder.Decode(&result)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding network: %s", err)
+		return nil, fmt.Errorf("error decoding RNN checkpoint file: %s", err)
 	}
+
+	result.checkpointFile = filePath
 
 	return &result, nil
 }

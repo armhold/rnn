@@ -31,10 +31,11 @@ type RNN struct {
 	indexToChar map[int]rune
 	VocabSize   int
 	n           int // current iteration
+	checkpointFile string
 }
 
-func NewRNN(input string) *RNN {
-	result := &RNN{data: input}
+func NewRNN(input, checkpointFile string) *RNN {
+	result := &RNN{data: input, checkpointFile: checkpointFile}
 	result.charToIndex, result.indexToChar = mapInput(result.data)
 
 	result.VocabSize = len(result.charToIndex)
@@ -210,7 +211,15 @@ func (r *RNN) Run() {
 			log.Print(s)
 		}
 
-		// forward seq_length characters through the net and fetch gradient
+		if r.n %1000 == 0 {
+			err := r.SaveTo(r.checkpointFile)
+			if err != nil {
+				log.Fatalf("unable to save checkpoint file: %s", err)
+			}
+		}
+
+
+			// forward seq_length characters through the net and fetch gradient
 		var loss float64
 		var dWxh, dWhh, dWhy, dbh, dby *mat64.Dense
 

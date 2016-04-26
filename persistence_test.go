@@ -7,20 +7,20 @@ import (
 )
 
 func TestSaveload(t *testing.T) {
-	n := NewRNN("Mary had a little lamb.")
-
 	f, err := ioutil.TempFile("", "network")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	n.Save(f.Name())
-	restored, err := LoadNetwork(f.Name())
+	rnn := NewRNN("Mary had a little lamb.", f.Name())
+
+	rnn.SaveTo(f.Name())
+	restored, err := LoadFrom(f.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(n, restored) {
-		t.Fatalf("expected: %+v, got %+v", n, restored)
+	if !reflect.DeepEqual(rnn, restored) {
+		t.Fatalf("expected: %+v, got %+v", rnn, restored)
 	}
 }
