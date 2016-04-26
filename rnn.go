@@ -30,6 +30,7 @@ type RNN struct {
 	charToIndex map[rune]int
 	indexToChar map[int]rune
 	VocabSize   int
+	n           int // current iteration
 }
 
 func NewRNN(input string) *RNN {
@@ -173,7 +174,7 @@ func (r *RNN) Run() {
 	runes := []rune(r.data)
 	inputLen := len(runes)
 
-	iter := 0
+	r.n = 0
 	p := 0
 	mWxh, mWhh, mWhy := zerosLike(r.Wxh), zerosLike(r.Whh), zerosLike(r.Why)
 	mbh, mby := zerosLike(r.bh), zerosLike(r.by)                        // memory variables for Adagrad
@@ -186,7 +187,7 @@ func (r *RNN) Run() {
 
 	for {
 		// prepare inputs (we're sweeping from left to right in steps seq_length long)
-		if p+SequenceLength+1 >= inputLen || iter == 0 {
+		if p+SequenceLength+1 >= inputLen || r.n == 0 {
 			hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
 			p = 0                                      // go from start of data
 		}
@@ -198,7 +199,7 @@ func (r *RNN) Run() {
 		//log.Printf("inputs: %q, p: %d", inputs, p)
 
 		// sample from the model now and then
-		if iter%100 == 0 {
+		if r.n %100 == 0 {
 			sample_ix := r.sample(hprev, inputs[0], 200)
 			chars := make([]rune, len(sample_ix))
 			for i, ix := range sample_ix {
@@ -215,8 +216,8 @@ func (r *RNN) Run() {
 
 		loss, dWxh, dWhh, dWhy, dbh, dby, hprev = r.LossFunc(inputs, targets, hprev)
 		smooth_loss = smooth_loss*0.999 + loss*0.001
-		if iter%100 == 0 {
-			log.Printf("iter %d, loss: %f", iter, smooth_loss) // print progress
+		if r.n %100 == 0 {
+			log.Printf("iter %d, loss: %f", r.n, smooth_loss) // print progress
 		}
 
 		// perform parameter update with Adagrad
@@ -249,7 +250,7 @@ func (r *RNN) Run() {
 		doIt(r.by, dby, mby)
 
 		p = p + SequenceLength
-		iter += 1
+		r.n++
 	}
 }
 
