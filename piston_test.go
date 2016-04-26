@@ -2,10 +2,10 @@ package piston
 
 import (
 	"log"
-	"testing"
-	"time"
 	"os"
 	"path"
+	"testing"
+	"time"
 )
 
 func TestSaveAndCompile(t *testing.T) {
