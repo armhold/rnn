@@ -10,7 +10,7 @@ import (
 // Implements GobDecoder. This is necessary because Network contains several unexported fields.
 // It would be easier to simply export them by changing to uppercase, but for comparison purposes,
 // I wanted to keep the field names the same between Go and the original Python code.
-func (n *Network) GobEncode() ([]byte, error) {
+func (n *RNN) GobEncode() ([]byte, error) {
 	var b bytes.Buffer
 	encoder := gob.NewEncoder(&b)
 
@@ -39,7 +39,7 @@ func (n *Network) GobEncode() ([]byte, error) {
 
 
 // Implement GoDecoder
-func (n *Network) GobDecode(data []byte) error {
+func (n *RNN) GobDecode(data []byte) error {
 	b := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(b)
 
@@ -65,7 +65,7 @@ func (n *Network) GobDecode(data []byte) error {
 	return err
 }
 
-func (n *Network) Save(filePath string) error {
+func (n *RNN) Save(filePath string) error {
 	buf := new(bytes.Buffer)
 	encoder := gob.NewEncoder(buf)
 
@@ -82,7 +82,7 @@ func (n *Network) Save(filePath string) error {
 	return nil
 }
 
-func LoadNetwork(filePath string) (*Network, error) {
+func LoadNetwork(filePath string) (*RNN, error) {
 	b, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading network file: %s", err)
@@ -90,7 +90,7 @@ func LoadNetwork(filePath string) (*Network, error) {
 
 	decoder := gob.NewDecoder(bytes.NewBuffer(b))
 
-	var result Network
+	var result RNN
 	err = decoder.Decode(&result)
 	if err != nil {
 		return nil, fmt.Errorf("error decoding network: %s", err)

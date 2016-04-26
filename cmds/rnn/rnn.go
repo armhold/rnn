@@ -13,6 +13,6 @@ func main() {
 	}
 
 	input := string(inputBytes)
-	n := piston.NewNetwork(input)
+	n := piston.NewRNN(input)
 	n.Run()
 }

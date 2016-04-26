@@ -7,14 +7,14 @@ import (
 )
 
 func TestNetwork(t *testing.T) {
-	n := NewNetwork("Mary had a little lamb, its fleece was white as snow. Everywhere that Mary went, the lamb was sure to go.")
+	r := NewRNN("Mary had a little lamb, its fleece was white as snow. Everywhere that Mary went, the lamb was sure to go.")
 
 	expected := 25
-	if n.VocabSize != expected {
-		t.Fatalf("VocabSize expected: %d, got: %d", expected, n.VocabSize)
+	if r.VocabSize != expected {
+		t.Fatalf("VocabSize expected: %d, got: %d", expected, r.VocabSize)
 	}
 
-	n.Run()
+	//r.Run()
 }
 
 // testing my understanding of how to multiply a mat64 matrix by a scalar

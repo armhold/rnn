@@ -7,7 +7,7 @@ import (
 )
 
 func TestSaveload(t *testing.T) {
-	n := NewNetwork("Mary had a little lamb.")
+	n := NewRNN("Mary had a little lamb.")
 
 	f, err := ioutil.TempFile("", "network")
 	if err != nil {
