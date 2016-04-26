@@ -4,6 +4,8 @@ import (
 	"log"
 	"testing"
 	"time"
+	"os"
+	"path"
 )
 
 func TestSaveAndCompile(t *testing.T) {
@@ -25,8 +27,10 @@ func doIt() {
 	fmt.Printf("Hello, World!\n")
 }
 `
+	f := "prog.go"
 
-	err := piston.SaveAndCompile("prog.go", p1)
+	defer func() { os.Remove(path.Join(scratchDir, f)) }()
+	err := piston.SaveAndCompile(f, p1)
 
 	if err != nil {
 		t.Fatalf("should succeed: %s", err)
@@ -50,7 +54,7 @@ func doIt() {
 
 x
 `
-	err = piston.SaveAndCompile("prog.go", p2)
+	err = piston.SaveAndCompile(f, p2)
 	if err == nil {
 		t.Fatalf("should fail: %s", err)
 	}
