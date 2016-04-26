@@ -1,9 +1,9 @@
 package piston
 
 import (
+	"github.com/gonum/matrix/mat64"
 	"reflect"
 	"testing"
-	"github.com/gonum/matrix/mat64"
 )
 
 func TestNetwork(t *testing.T) {
@@ -19,12 +19,12 @@ func TestNetwork(t *testing.T) {
 
 // testing my understanding of how to multiply a mat64 matrix by a scalar
 func TestMultiply(t *testing.T) {
-	a := mat64.NewDense(2, 2, []float64 { 0, 1, 2, 3 })
+	a := mat64.NewDense(2, 2, []float64{0, 1, 2, 3})
 	a.Scale(2, a)
 
-	expectedRows := [][]float64 {
-		{ 0, 2 },
-		{ 4, 6 },
+	expectedRows := [][]float64{
+		{0, 2},
+		{4, 6},
 	}
 
 	r, c := a.Dims()
@@ -36,7 +36,7 @@ func TestMultiply(t *testing.T) {
 		expected := row
 		actual := a.RawRowView(i)
 
-		if ! reflect.DeepEqual(actual, expected) {
+		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("for row %d, expected: %+v, got: %+v", i, expected, actual)
 		}
 	}

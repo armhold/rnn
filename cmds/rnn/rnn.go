@@ -6,7 +6,6 @@ import (
 	"log"
 )
 
-
 func main() {
 	inputBytes, err := ioutil.ReadFile("input.txt")
 	if err != nil {

@@ -1,15 +1,14 @@
 package piston
 
 import (
-	"math/rand"
-	"time"
+	"github.com/gonum/matrix/mat64"
 	"log"
 	"math"
-	"github.com/gonum/matrix/mat64"
+	"math/rand"
+	"time"
 )
 
-import 	discreterand "github.com/dgryski/go-discreterand"
-
+import discreterand "github.com/dgryski/go-discreterand"
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -22,11 +21,11 @@ const (
 )
 
 type Network struct {
-	Wxh         *mat64.Dense  // input to hidden weights
-	Whh         *mat64.Dense  // hidden to hidden weights
-	Why         *mat64.Dense  // hidden to output weights
-	bh          *mat64.Dense  // hidden bias
-	by          *mat64.Dense  // output bias
+	Wxh *mat64.Dense // input to hidden weights
+	Whh *mat64.Dense // hidden to hidden weights
+	Why *mat64.Dense // hidden to output weights
+	bh  *mat64.Dense // hidden bias
+	by  *mat64.Dense // output bias
 
 	data        string
 	charToIndex map[rune]int
@@ -62,8 +61,8 @@ func (n *Network) Run() {
 	iter := 0
 	p := 0
 	mWxh, mWhh, mWhy := zerosLike(n.Wxh), zerosLike(n.Whh), zerosLike(n.Why)
-	mbh, mby := zerosLike(n.bh), zerosLike(n.by) // memory variables for Adagrad
-	smooth_loss := -math.Log(1.0 / float64(n.VocabSize)) * SequenceLength // loss at iteration 0
+	mbh, mby := zerosLike(n.bh), zerosLike(n.by)                        // memory variables for Adagrad
+	smooth_loss := -math.Log(1.0/float64(n.VocabSize)) * SequenceLength // loss at iteration 0
 
 	var hprev *mat64.Dense
 
@@ -72,27 +71,26 @@ func (n *Network) Run() {
 
 	for {
 		// prepare inputs (we're sweeping from left to right in steps seq_length long)
-		if p + SequenceLength + 1 >= inputLen || iter == 0 {
+		if p+SequenceLength+1 >= inputLen || iter == 0 {
 			hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
-			p = 0  // go from start of data
+			p = 0                                      // go from start of data
 		}
 
 		for i := 0; i < SequenceLength; i++ {
-			inputs[i] = n.charToIndex[runes[p + i]]
-			targets[i] = n.charToIndex[runes[p + i + 1]]
+			inputs[i] = n.charToIndex[runes[p+i]]
+			targets[i] = n.charToIndex[runes[p+i+1]]
 		}
 		//log.Printf("inputs: %q, p: %d", inputs, p)
 
-
 		// sample from the model now and then
-		if iter % 100 == 0 {
+		if iter%100 == 0 {
 			sample_ix := n.sample(hprev, inputs[0], 200)
 			s := ""
 			chars := make([]rune, len(sample_ix))
 			for i, ix := range sample_ix {
 				ch := n.indexToChar[ix]
 				chars[i] = ch
-	 		}
+			}
 			s = string(chars)
 			log.Printf(s)
 		}
@@ -102,8 +100,8 @@ func (n *Network) Run() {
 		var dWxh, dWhh, dWhy, dbh, dby *mat64.Dense
 
 		loss, dWxh, dWhh, dWhy, dbh, dby, hprev = n.LossFunc(inputs, targets, hprev)
-		smooth_loss = smooth_loss * 0.999 + loss * 0.001
-		if iter % 100 == 0 {
+		smooth_loss = smooth_loss*0.999 + loss*0.001
+		if iter%100 == 0 {
 			log.Printf("iter %d, loss: %f", iter, smooth_loss) // print progress
 		}
 
@@ -120,7 +118,7 @@ func (n *Network) Run() {
 
 			sqrtMem := &mat64.Dense{}
 			sqrtMem.Apply(func(i, j int, v float64) float64 {
-				return math.Sqrt(v + 1e-8)   // adagrad update
+				return math.Sqrt(v + 1e-8) // adagrad update
 			}, mem)
 
 			tmp.DivElem(tmp, sqrtMem)
@@ -139,9 +137,7 @@ func (n *Network) Run() {
 	}
 }
 
-
-
-func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) (loss float64, dWxh *mat64.Dense, dWhh *mat64.Dense, dWhy *mat64.Dense, dbh *mat64.Dense, dby *mat64.Dense, lastHs *mat64.Dense ){
+func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) (loss float64, dWxh *mat64.Dense, dWhh *mat64.Dense, dWhy *mat64.Dense, dbh *mat64.Dense, dby *mat64.Dense, lastHs *mat64.Dense) {
 	xs := make(map[int]*mat64.Dense)
 	hs := make(map[int]*mat64.Dense)
 	ys := make(map[int]*mat64.Dense)
@@ -182,7 +178,7 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) (loss floa
 		ps[t] = expDivSumExp(ys[t])
 
 		// softmax (cross-entropy loss)
-		loss += - math.Log(ps[t].At(targets[t], 0))
+		loss += -math.Log(ps[t].At(targets[t], 0))
 	}
 
 	//  backward pass: compute gradients going backwards
@@ -193,14 +189,13 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) (loss floa
 
 	for t := len(inputs) - 1; t >= 0; t-- {
 		dy := mat64.DenseCopyOf(ps[t])
-		dy.Set(targets[t], 0, dy.At(targets[t], 0) - 1) // backprop into y
+		dy.Set(targets[t], 0, dy.At(targets[t], 0)-1) // backprop into y
 
 		dWhy.Add(dWhy, dot(dy, hs[t].T()))
 		dby.Add(dby, dy)
 
-		dh := dot(n.Why.T(), dy)   // backprop into h
+		dh := dot(n.Why.T(), dy) // backprop into h
 		dh.Add(dh, dhnext)
-
 
 		// backprop through tanh nonlinearity
 		dhraw := &mat64.Dense{}
@@ -212,18 +207,18 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) (loss floa
 
 		dbh.Add(dbh, dhraw)
 		dWxh.Add(dWxh, dot(dhraw, xs[t].T()))
-		dWhh.Add(dWhh, dot(dhraw, hs[t - 1].T()))
+		dWhh.Add(dWhh, dot(dhraw, hs[t-1].T()))
 		dhnext = dot(n.Whh.T(), dhraw)
 	}
 
 	// clip to mitigate exploding gradients
 	clipTo(-5, 5, dWxh, dWhh, dWhy, dbh, dby)
 
-	lastHs = hs[len(inputs) - 1]
+	lastHs = hs[len(inputs)-1]
 	return
 }
 
-func (n *Network) sample(h *mat64.Dense, seedIx, count  int) []int {
+func (n *Network) sample(h *mat64.Dense, seedIx, count int) []int {
 	x := mat64.NewDense(n.VocabSize, 1, nil)
 	x.Set(seedIx, 0, 1)
 
@@ -239,7 +234,6 @@ func (n *Network) sample(h *mat64.Dense, seedIx, count  int) []int {
 		h.Apply(func(i, j int, v float64) float64 {
 			return math.Tanh(v)
 		}, h)
-
 
 		y := dot(n.Why, h)
 		y.Add(y, n.by)
@@ -299,7 +293,6 @@ func dot(a, b mat64.Matrix) *mat64.Dense {
 	return result
 }
 
-
 func zerosLike(a mat64.Matrix) *mat64.Dense {
 	r, c := a.Dims()
 	return mat64.NewDense(r, c, nil)
@@ -339,7 +332,7 @@ func expDivSumExp(m *mat64.Dense) *mat64.Dense {
 func ravel(m *mat64.Dense) []float64 {
 	r, c := m.Dims()
 
-	result := make([]float64, r * c)
+	result := make([]float64, r*c)
 
 	i := 0
 
