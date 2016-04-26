@@ -6,9 +6,8 @@ import (
 	"math"
 	"math/rand"
 	"time"
+	discreterand "github.com/dgryski/go-discreterand"
 )
-
-import discreterand "github.com/dgryski/go-discreterand"
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -36,8 +35,8 @@ type Network struct {
 func NewNetwork(input string) *Network {
 	result := &Network{data: input}
 	result.charToIndex, result.indexToChar = mapInput(result.data)
+
 	result.VocabSize = len(result.charToIndex)
-	result.bh = mat64.NewDense(HiddenSize, 1, nil)
 
 	result.Wxh = randomMatrix(HiddenSize, result.VocabSize)
 	result.Wxh.Scale(0.01, result.Wxh)
@@ -48,93 +47,10 @@ func NewNetwork(input string) *Network {
 	result.Why = randomMatrix(result.VocabSize, HiddenSize)
 	result.Why.Scale(0.01, result.Why)
 
-	result.bh = mat64.NewDense(HiddenSize, 1, nil)
-	result.by = mat64.NewDense(result.VocabSize, 1, nil)
+	result.bh = mat64.NewDense(HiddenSize, 1, nil) // hidden bias
+	result.by = mat64.NewDense(result.VocabSize, 1, nil) // output bias
 
 	return result
-}
-
-func (n *Network) Run() {
-	runes := []rune(n.data)
-	inputLen := len(runes)
-
-	iter := 0
-	p := 0
-	mWxh, mWhh, mWhy := zerosLike(n.Wxh), zerosLike(n.Whh), zerosLike(n.Why)
-	mbh, mby := zerosLike(n.bh), zerosLike(n.by)                        // memory variables for Adagrad
-	smooth_loss := -math.Log(1.0/float64(n.VocabSize)) * SequenceLength // loss at iteration 0
-
-	var hprev *mat64.Dense
-
-	inputs := make([]int, SequenceLength)
-	targets := make([]int, SequenceLength)
-
-	for {
-		// prepare inputs (we're sweeping from left to right in steps seq_length long)
-		if p+SequenceLength+1 >= inputLen || iter == 0 {
-			hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
-			p = 0                                      // go from start of data
-		}
-
-		for i := 0; i < SequenceLength; i++ {
-			inputs[i] = n.charToIndex[runes[p+i]]
-			targets[i] = n.charToIndex[runes[p+i+1]]
-		}
-		//log.Printf("inputs: %q, p: %d", inputs, p)
-
-		// sample from the model now and then
-		if iter%100 == 0 {
-			sample_ix := n.sample(hprev, inputs[0], 200)
-			s := ""
-			chars := make([]rune, len(sample_ix))
-			for i, ix := range sample_ix {
-				ch := n.indexToChar[ix]
-				chars[i] = ch
-			}
-			s = string(chars)
-			log.Printf(s)
-		}
-
-		// forward seq_length characters through the net and fetch gradient
-		var loss float64
-		var dWxh, dWhh, dWhy, dbh, dby *mat64.Dense
-
-		loss, dWxh, dWhh, dWhy, dbh, dby, hprev = n.LossFunc(inputs, targets, hprev)
-		smooth_loss = smooth_loss*0.999 + loss*0.001
-		if iter%100 == 0 {
-			log.Printf("iter %d, loss: %f", iter, smooth_loss) // print progress
-		}
-
-		// perform parameter update with Adagrad
-		//
-		doIt := func(param, dparam, mem *mat64.Dense) {
-
-			dSquared := &mat64.Dense{}
-			dSquared.MulElem(dparam, dparam)
-			mem.Add(mem, dSquared)
-
-			tmp := &mat64.Dense{}
-			tmp.Scale(-LearningRate, dparam)
-
-			sqrtMem := &mat64.Dense{}
-			sqrtMem.Apply(func(i, j int, v float64) float64 {
-				return math.Sqrt(v + 1e-8) // adagrad update
-			}, mem)
-
-			tmp.DivElem(tmp, sqrtMem)
-			param.Add(param, tmp)
-
-		}
-
-		doIt(n.Wxh, dWxh, mWxh)
-		doIt(n.Whh, dWhh, mWhh)
-		doIt(n.Why, dWhy, mWhy)
-		doIt(n.bh, dbh, mbh)
-		doIt(n.by, dby, mby)
-
-		p = p + SequenceLength
-		iter += 1
-	}
 }
 
 func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) (loss float64, dWxh *mat64.Dense, dWhh *mat64.Dense, dWhy *mat64.Dense, dbh *mat64.Dense, dby *mat64.Dense, lastHs *mat64.Dense) {
@@ -169,8 +85,7 @@ func (n *Network) LossFunc(inputs, targets []int, hprev *mat64.Dense) (loss floa
 
 		// unnormalized log probabilities for next chars
 		//
-		ys[t] = &mat64.Dense{}
-		ys[t].Mul(n.Why, hs[t])
+		ys[t] = dot(n.Why, hs[t])
 		ys[t].Add(ys[t], n.by)
 
 		// probabilities for next chars
@@ -228,6 +143,8 @@ func (n *Network) sample(h *mat64.Dense, seedIx, count int) []int {
 		dot1 := dot(n.Wxh, x)
 		dot2 := dot(n.Whh, h)
 
+		// NB: h gets re-assigned here
+		h = &mat64.Dense{}
 		h.Add(dot1, dot2)
 		h.Add(h, n.bh)
 
@@ -243,13 +160,97 @@ func (n *Network) sample(h *mat64.Dense, seedIx, count int) []int {
 		index := at.Next()
 		r := rangeToArray(n.VocabSize)
 		ix := r[index]
-		log.Printf("chose index %d -> %d", index, ix)
+		//log.Printf("chose index %d -> %d", index, ix)
 		x := mat64.NewDense(n.VocabSize, 1, nil)
 		x.Set(ix, 0, 1)
 		ixes = append(ixes, ix)
 	}
 
 	return ixes
+}
+
+func (n *Network) Run() {
+	runes := []rune(n.data)
+	inputLen := len(runes)
+
+	iter := 0
+	p := 0
+	mWxh, mWhh, mWhy := zerosLike(n.Wxh), zerosLike(n.Whh), zerosLike(n.Why)
+	mbh, mby := zerosLike(n.bh), zerosLike(n.by)                        // memory variables for Adagrad
+	smooth_loss := -math.Log(1.0/float64(n.VocabSize)) * SequenceLength // loss at iteration 0
+
+	var hprev *mat64.Dense
+
+	inputs := make([]int, SequenceLength)
+	targets := make([]int, SequenceLength)
+
+	for {
+		// prepare inputs (we're sweeping from left to right in steps seq_length long)
+		if p+SequenceLength+1 >= inputLen || iter == 0 {
+			hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
+			p = 0                                      // go from start of data
+		}
+
+		for i := 0; i < SequenceLength; i++ {
+			inputs[i] = n.charToIndex[runes[p+i]]
+			targets[i] = n.charToIndex[runes[p+i+1]]
+		}
+		//log.Printf("inputs: %q, p: %d", inputs, p)
+
+		// sample from the model now and then
+		if iter%100 == 0 {
+			sample_ix := n.sample(hprev, inputs[0], 200)
+			chars := make([]rune, len(sample_ix))
+			for i, ix := range sample_ix {
+				ch := n.indexToChar[ix]
+				chars[i] = ch
+			}
+			s := string(chars)
+			log.Print(s)
+		}
+
+		// forward seq_length characters through the net and fetch gradient
+		var loss float64
+		var dWxh, dWhh, dWhy, dbh, dby *mat64.Dense
+
+		loss, dWxh, dWhh, dWhy, dbh, dby, hprev = n.LossFunc(inputs, targets, hprev)
+		smooth_loss = smooth_loss*0.999 + loss*0.001
+		if iter%100 == 0 {
+			log.Printf("iter %d, loss: %f", iter, smooth_loss) // print progress
+		}
+
+		// perform parameter update with Adagrad
+		//
+		doIt := func(param, dparam, mem *mat64.Dense) {
+			dSquared := &mat64.Dense{}
+			dSquared.MulElem(dparam, dparam)
+			mem.Add(mem, dSquared)
+
+			tmp := &mat64.Dense{}
+			tmp.Scale(-LearningRate, dparam)
+
+			sqrtMem := &mat64.Dense{}
+			sqrtMem.Apply(func(i, j int, v float64) float64 {
+				return v + 1e-8
+			}, mem)
+
+			sqrtMem.Apply(func(i, j int, v float64) float64 {
+				return math.Sqrt(v) // adagrad update
+			}, sqrtMem)
+
+			tmp.DivElem(tmp, sqrtMem)
+			param.Add(param, tmp)
+		}
+
+		doIt(n.Wxh, dWxh, mWxh)
+		doIt(n.Whh, dWhh, mWhh)
+		doIt(n.Why, dWhy, mWhy)
+		doIt(n.bh, dbh, mbh)
+		doIt(n.by, dby, mby)
+
+		p = p + SequenceLength
+		iter += 1
+	}
 }
 
 func randomMatrix(rows, cols int) *mat64.Dense {
