@@ -29,11 +29,19 @@ func (r *RNN) GobEncode() ([]byte, error) {
 	encode(r.Why)
 	encode(r.bh)
 	encode(r.by)
+	encode(&r.hprev)
+	encode(&r.mWxh)
+	encode(&r.mWhh)
+	encode(&r.mWhy)
+	encode(&r.mbh)
+	encode(&r.mby)
 	encode(r.data)
 	encode(r.charToIndex)
 	encode(r.indexToChar)
 	encode(r.VocabSize)
 	encode(r.n)
+	encode(r.loss)
+	encode(r.smooth_loss)
 
 	return b.Bytes(), err
 }
@@ -57,11 +65,19 @@ func (r *RNN) GobDecode(data []byte) error {
 	decode(&r.Why)
 	decode(&r.bh)
 	decode(&r.by)
+	decode(&r.hprev)
+	decode(&r.mWxh)
+	decode(&r.mWhh)
+	decode(&r.mWhy)
+	decode(&r.mbh)
+	decode(&r.mby)
 	decode(&r.data)
 	decode(&r.charToIndex)
 	decode(&r.indexToChar)
 	decode(&r.VocabSize)
 	decode(&r.n)
+	decode(&r.loss)
+	decode(&r.smooth_loss)
 
 	return err
 }

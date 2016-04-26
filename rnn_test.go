@@ -2,14 +2,16 @@ package piston
 
 import (
 	"github.com/gonum/matrix/mat64"
+	"io/ioutil"
 	"reflect"
 	"testing"
+	"strings"
 )
 
 func TestNetwork(t *testing.T) {
-	r := NewRNN("Mary had a little lamb, its fleece was white as snow. Everywhere that Mary went, the lamb was sure to go.", "test.tmp")
+	r := NewRNN(strings.Repeat("Mary had a little lamb.", 10), "test.tmp")
 
-	expected := 25
+	expected := 14
 	if r.VocabSize != expected {
 		t.Fatalf("VocabSize expected: %d, got: %d", expected, r.VocabSize)
 	}
@@ -87,5 +89,20 @@ func TestMapInput(t *testing.T) {
 	}
 	if !reflect.DeepEqual(expectedITC, actualITC) {
 		t.Fatalf("expected: %+v, got: %+v", expectedITC, actualITC)
+	}
+}
+
+func BenchmarkRun(b *testing.B) {
+	inputBytes, err := ioutil.ReadFile("input.txt")
+	if err != nil {
+		b.Fatalf("error reading input training file: %s", err)
+	}
+
+	input := string(inputBytes)
+
+	rnn := NewRNN(input, "test.tmp")
+
+	for i := 0; i < b.N; i++ {
+		rnn.Run(10)
 	}
 }

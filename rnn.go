@@ -15,26 +15,37 @@ func init() {
 
 const (
 	HiddenSize     = 100 // size of hidden layer of neurons
+	SampleCount    = 200
 	LearningRate   = 1e-1
 	SequenceLength = 25 // number of steps to unroll the RNN for
 )
 
 type RNN struct {
-	Wxh *mat64.Dense // input to hidden weights
-	Whh *mat64.Dense // hidden to hidden weights
-	Why *mat64.Dense // hidden to output weights
-	bh  *mat64.Dense // hidden bias
-	by  *mat64.Dense // output bias
+	Wxh   *mat64.Dense // input to hidden weights
+	Whh   *mat64.Dense // hidden to hidden weights
+	Why   *mat64.Dense // hidden to output weights
+	bh    *mat64.Dense // hidden bias
+	by    *mat64.Dense // output bias
+	hprev *mat64.Dense
 
-	data           string
-	charToIndex    map[rune]int
-	indexToChar    map[int]rune
-	VocabSize      int
-	n              int // current iteration
-	checkpointFile string
+	mWxh, mWhh, mWhy *mat64.Dense
+	mbh, mby         *mat64.Dense
+
+	data              string
+	charToIndex       map[rune]int
+	indexToChar       map[int]rune
+	VocabSize         int
+	n                 int // current iteration
+	checkpointFile    string
+	loss, smooth_loss float64
 }
 
 func NewRNN(input, checkpointFile string) *RNN {
+	inputLen := len([]rune(input))
+	if inputLen < SampleCount {
+		log.Fatalf("input length: %d, must be >= %d", inputLen, SampleCount)
+	}
+
 	result := &RNN{data: input, checkpointFile: checkpointFile}
 	result.charToIndex, result.indexToChar = mapInput(result.data)
 
@@ -51,6 +62,11 @@ func NewRNN(input, checkpointFile string) *RNN {
 
 	result.bh = mat64.NewDense(HiddenSize, 1, nil)       // hidden bias
 	result.by = mat64.NewDense(result.VocabSize, 1, nil) // output bias
+
+	result.mWxh, result.mWhh, result.mWhy = zerosLike(result.Wxh), zerosLike(result.Whh), zerosLike(result.Why)
+	result.mbh, result.mby = zerosLike(result.bh), zerosLike(result.by) // memory variables for Adagrad
+
+	result.smooth_loss = -math.Log(1.0/float64(result.VocabSize)) * SequenceLength // loss at iteration 0
 
 	return result
 }
@@ -171,25 +187,20 @@ func (r *RNN) sample(h *mat64.Dense, seedIx, count int) []int {
 	return ixes
 }
 
-func (r *RNN) Run() {
+func (r *RNN) Run(maxIter int) {
 	runes := []rune(r.data)
 	inputLen := len(runes)
 
 	p := 0
-	mWxh, mWhh, mWhy := zerosLike(r.Wxh), zerosLike(r.Whh), zerosLike(r.Why)
-	mbh, mby := zerosLike(r.bh), zerosLike(r.by)                        // memory variables for Adagrad
-	smooth_loss := -math.Log(1.0/float64(r.VocabSize)) * SequenceLength // loss at iteration 0
-
-	var hprev *mat64.Dense
 
 	inputs := make([]int, SequenceLength)
 	targets := make([]int, SequenceLength)
 
-	for {
+	for r.n < maxIter {
 		// prepare inputs (we're sweeping from left to right in steps seq_length long)
-		if p+SequenceLength+1 >= inputLen || hprev == nil {
-			hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
-			p = 0                                      // go from start of data
+		if p+SequenceLength+1 >= inputLen || r.hprev == nil {
+			r.hprev = mat64.NewDense(HiddenSize, 1, nil) // reset RNN memory
+			p = 0                                        // go from start of data
 		}
 
 		for i := 0; i < SequenceLength; i++ {
@@ -199,7 +210,7 @@ func (r *RNN) Run() {
 
 		// sample from the model now and then
 		if r.n%100 == 0 {
-			sample_ix := r.sample(hprev, inputs[0], 200)
+			sample_ix := r.sample(r.hprev, inputs[0], SampleCount)
 			chars := make([]rune, len(sample_ix))
 			for i, ix := range sample_ix {
 				ch := r.indexToChar[ix]
@@ -217,13 +228,12 @@ func (r *RNN) Run() {
 		}
 
 		// forward seq_length characters through the net and fetch gradient
-		var loss float64
 		var dWxh, dWhh, dWhy, dbh, dby *mat64.Dense
 
-		loss, dWxh, dWhh, dWhy, dbh, dby, hprev = r.LossFunc(inputs, targets, hprev)
-		smooth_loss = smooth_loss*0.999 + loss*0.001
+		r.loss, dWxh, dWhh, dWhy, dbh, dby, r.hprev = r.LossFunc(inputs, targets, r.hprev)
+		r.smooth_loss = r.smooth_loss*0.999 + r.loss*0.001
 		if r.n%100 == 0 {
-			log.Printf("iter %d, loss: %f", r.n, smooth_loss) // print progress
+			log.Printf("iter %d, loss: %f", r.n, r.smooth_loss) // print progress
 		}
 
 		// perform parameter update with Adagrad
@@ -249,11 +259,11 @@ func (r *RNN) Run() {
 			param.Add(param, tmp)
 		}
 
-		doIt(r.Wxh, dWxh, mWxh)
-		doIt(r.Whh, dWhh, mWhh)
-		doIt(r.Why, dWhy, mWhy)
-		doIt(r.bh, dbh, mbh)
-		doIt(r.by, dby, mby)
+		doIt(r.Wxh, dWxh, r.mWxh)
+		doIt(r.Whh, dWhh, r.mWhh)
+		doIt(r.Why, dWhy, r.mWhy)
+		doIt(r.bh, dbh, r.mbh)
+		doIt(r.by, dby, r.mby)
 
 		p = p + SequenceLength
 		r.n++

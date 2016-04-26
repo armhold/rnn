@@ -2,7 +2,9 @@ package piston
 
 import (
 	"io/ioutil"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -11,9 +13,10 @@ func TestSaveload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer func() { os.Remove(f.Name()) }()
 
-	rnn := NewRNN("Mary had a little lamb.", f.Name())
-	rnn.n = 400
+	rnn := NewRNN(strings.Repeat("Mary had a little lamb. ", 10), f.Name())
+	rnn.Run(10)
 
 	rnn.SaveTo(f.Name())
 	restored, err := LoadFrom(f.Name())
