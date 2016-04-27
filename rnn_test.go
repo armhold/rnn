@@ -1,4 +1,4 @@
-package piston
+package rnn
 
 import (
 	"github.com/gonum/matrix/mat64"
@@ -103,6 +103,6 @@ func BenchmarkRun(b *testing.B) {
 	rnn := NewRNN(input, "")
 
 	for i := 0; i < b.N; i++ {
-		rnn.Run(10)
+		rnn.Run(1000)
 	}
 }

@@ -1,4 +1,4 @@
-package piston
+package rnn
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-// Implements GobDecoder. This is necessary because Network contains several unexported fields.
+// Implements GobDecoder. This is necessary because RNN contains several unexported fields.
 // It would be easier to simply export them by changing to uppercase, but for comparison purposes,
 // I wanted to keep the field names the same between Go and the original Python code.
 func (r *RNN) GobEncode() ([]byte, error) {

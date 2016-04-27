@@ -1,2 +1,2 @@
-# piston
-exploring Go's AST package
+# rnn
+translating a Recurrent Neural Network from Python to Go

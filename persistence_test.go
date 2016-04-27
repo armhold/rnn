@@ -1,4 +1,4 @@
-package piston
+package rnn
 
 import (
 	"io/ioutil"

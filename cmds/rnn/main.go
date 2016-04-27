@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/armhold/piston"
+	"github.com/armhold/rnn"
 	"io/ioutil"
 	"log"
 	"os"
@@ -32,17 +32,17 @@ func main() {
 
 	input := string(inputBytes)
 
-	var rnn *piston.RNN
+	var r *rnn.RNN
 
 	// if there's an existing checkpoint file, restore from last checkpoint
 	if _, err := os.Stat(cpFile); !os.IsNotExist(err) {
-		rnn, err = piston.LoadFrom(cpFile)
+		r, err = rnn.LoadFrom(cpFile)
 		if err != nil {
 			log.Fatalf("unable to restore RNN from checkpoint file: %s", err)
 		}
 	} else {
-		rnn = piston.NewRNN(input, cpFile)
+		r = rnn.NewRNN(input, cpFile)
 	}
 
-	rnn.Run(maxIter)
+	r.Run(maxIter)
 }

@@ -1,4 +1,4 @@
-package piston
+package rnn
 
 import (
 	discreterand "github.com/dgryski/go-discreterand"
