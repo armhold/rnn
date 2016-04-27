@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"github.com/davecheney/profile"
+	//"github.com/davecheney/profile"
 )
 
 var (
@@ -23,7 +23,7 @@ func init() {
 }
 
 func main() {
-	defer profile.Start(profile.CPUProfile).Stop()
+	//defer profile.Start(profile.CPUProfile).Stop()
 
 	inputBytes, err := ioutil.ReadFile(inputFile)
 	if err != nil {
