@@ -100,7 +100,7 @@ func BenchmarkRun(b *testing.B) {
 
 	input := string(inputBytes)
 
-	rnn := NewRNN(input, "test.tmp")
+	rnn := NewRNN(input, "")
 
 	for i := 0; i < b.N; i++ {
 		rnn.Run(10)

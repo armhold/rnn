@@ -220,7 +220,7 @@ func (r *RNN) Run(maxIter int) {
 			log.Print(s)
 		}
 
-		if r.n%1000 == 0 {
+		if r.n%1000 == 0 && r.checkpointFile != "" {
 			err := r.SaveTo(r.checkpointFile)
 			if err != nil {
 				log.Fatalf("unable to save checkpoint file: %s", err)
