@@ -238,7 +238,7 @@ func (r *RNN) Run(maxIter int) {
 
 		// perform parameter update with Adagrad
 		//
-		doIt := func(param, dparam, mem *mat64.Dense) {
+		adagrad := func(param, dparam, mem *mat64.Dense) {
 			dSquared := &mat64.Dense{}
 			dSquared.MulElem(dparam, dparam)
 			mem.Add(mem, dSquared)
@@ -259,33 +259,28 @@ func (r *RNN) Run(maxIter int) {
 			param.Add(param, tmp)
 		}
 
-		doIt(r.Wxh, dWxh, r.mWxh)
-		doIt(r.Whh, dWhh, r.mWhh)
-		doIt(r.Why, dWhy, r.mWhy)
-		doIt(r.bh, dbh, r.mbh)
-		doIt(r.by, dby, r.mby)
+		adagrad(r.Wxh, dWxh, r.mWxh)
+		adagrad(r.Whh, dWhh, r.mWhh)
+		adagrad(r.Why, dWhy, r.mWhy)
+		adagrad(r.bh, dbh, r.mbh)
+		adagrad(r.by, dby, r.mby)
 
 		p = p + SequenceLength
 		r.n++
 	}
 }
 
-func randomMatrix(rows, cols int) *mat64.Dense {
-	result := mat64.NewDense(rows, cols, nil)
-	randomize(result)
-
-	return result
-}
-
-func randomize(m *mat64.Dense) {
-	r, c := m.Dims()
+func randomMatrix(r, c int) *mat64.Dense {
+	result := mat64.NewDense(r, c, nil)
 
 	for row := 0; row < r; row++ {
 		for col := 0; col < c; col++ {
-			m.Set(row, col, rand.NormFloat64())
+			result.Set(row, col, rand.NormFloat64())
 		}
 
 	}
+
+	return result
 }
 
 func mapInput(input string) (charToIndex map[rune]int, indexToChar map[int]rune) {
@@ -346,6 +341,7 @@ func expDivSumExp(m *mat64.Dense) *mat64.Dense {
 	return result
 }
 
+// flatten a matrix into a one-dimensional slice of floats
 // TODO: unit test
 func ravel(m *mat64.Dense) []float64 {
 	r, c := m.Dims()
