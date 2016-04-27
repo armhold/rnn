@@ -81,7 +81,7 @@ func (r *RNN) LossFunc(inputs, targets []int, hprev *mat64.Dense) (loss float64,
 
 	// forward pass
 	//
-	for t, _ := range inputs {
+	for t := range inputs {
 		// encode in 1-of-k
 		//
 		xs[t] = mat64.NewDense(r.VocabSize, 1, nil)

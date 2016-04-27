@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-// Implements GobEncoder. This is necessary because RNN contains several unexported fields.
+// GobEncode implements GobEncoder. This is necessary because RNN contains several unexported fields.
 // It would be easier to simply export them by changing to uppercase, but for comparison purposes,
 // I wanted to keep the field names the same between Go and the original Python code.
 func (r *RNN) GobEncode() ([]byte, error) {
@@ -46,7 +46,7 @@ func (r *RNN) GobEncode() ([]byte, error) {
 	return b.Bytes(), err
 }
 
-// Implement GoDecoder
+// GobDecode implements GoDecoder.
 func (r *RNN) GobDecode(data []byte) error {
 	b := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(b)
@@ -82,13 +82,13 @@ func (r *RNN) GobDecode(data []byte) error {
 	return err
 }
 
-func (n *RNN) SaveTo(filePath string) error {
+func (r *RNN) SaveTo(filePath string) error {
 	log.Printf("Saving RNN to %s...", filePath)
 
 	buf := new(bytes.Buffer)
 	encoder := gob.NewEncoder(buf)
 
-	err := encoder.Encode(n)
+	err := encoder.Encode(r)
 	if err != nil {
 		return fmt.Errorf("error encoding network: %s", err)
 	}
