@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestSaveload(t *testing.T) {
+func TestAllFieldsPersisted(t *testing.T) {
 	f, err := ioutil.TempFile("", "network")
 	if err != nil {
 		t.Fatal(err)
@@ -16,6 +16,9 @@ func TestSaveload(t *testing.T) {
 	defer func() { os.Remove(f.Name()) }()
 
 	rnn := NewRNN(strings.Repeat("Mary had a little lamb. ", 10), f.Name())
+
+	// exercising it a bit will cause changes in the internal state... changes that we want to make sure
+	// get preserved during checkpointing.
 	rnn.Run(10)
 
 	rnn.SaveTo(f.Name())

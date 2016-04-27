@@ -9,3 +9,13 @@ I have attempted to translate it faithfully, even down to the level of preservin
 this is primarily implemented in persistence.go.
 
 Any errors here are my own, and not Karpathy's. Corrections welcome.
+
+
+## How to use it
+
+1. `$ go get github.com/armhold/rnn/...`
+1. `$ cd $GOPATH/src/github.com/armhold/rnn`
+1. `$ rnn -i input.txt`
+
+This will run the network on a small corpus of Shakespeare text. After a few thousand iterations,
+you should start seeing output that looks superficially like a Shakespeare play.
