@@ -6,20 +6,25 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"github.com/davecheney/profile"
 )
 
 var (
 	cpFile    string
 	inputFile string
+	maxIter   int
 )
 
 func init() {
 	flag.StringVar(&cpFile, "cp", "rnn.tmp", "specify checkpoint file")
 	flag.StringVar(&inputFile, "i", "input.txt", "specify input training file")
+	flag.IntVar(&maxIter, "m", 1000000, "max iterations")
 	flag.Parse()
 }
 
 func main() {
+	defer profile.Start(profile.CPUProfile).Stop()
+
 	inputBytes, err := ioutil.ReadFile(inputFile)
 	if err != nil {
 		log.Fatalf("error reading input training file: %s", err)
@@ -39,5 +44,5 @@ func main() {
 		rnn = piston.NewRNN(input, cpFile)
 	}
 
-	rnn.Run()
+	rnn.Run(maxIter)
 }
