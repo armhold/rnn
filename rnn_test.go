@@ -4,8 +4,8 @@ import (
 	"github.com/gonum/matrix/mat64"
 	"io/ioutil"
 	"reflect"
-	"testing"
 	"strings"
+	"testing"
 )
 
 func TestNetwork(t *testing.T) {

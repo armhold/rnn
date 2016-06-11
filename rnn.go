@@ -71,7 +71,14 @@ func NewRNN(input, checkpointFile string) *RNN {
 	return result
 }
 
-func (r *RNN) LossFunc(inputs, targets []int, hprev *mat64.Dense) (loss float64, dWxh *mat64.Dense, dWhh *mat64.Dense, dWhy *mat64.Dense, dbh *mat64.Dense, dby *mat64.Dense, lastHs *mat64.Dense) {
+func (r *RNN) LossFunc(inputs, targets []int, hprev *mat64.Dense) (loss float64,
+	dWxh *mat64.Dense,
+	dWhh *mat64.Dense,
+	dWhy *mat64.Dense,
+	dbh *mat64.Dense,
+	dby *mat64.Dense,
+	lastHs *mat64.Dense) {
+
 	xs := make(map[int]*mat64.Dense)
 	hs := make(map[int]*mat64.Dense)
 	ys := make(map[int]*mat64.Dense)
@@ -270,19 +277,6 @@ func (r *RNN) Run(maxIter int) {
 	}
 }
 
-func randomMatrix(r, c int) *mat64.Dense {
-	result := mat64.NewDense(r, c, nil)
-
-	for row := 0; row < r; row++ {
-		for col := 0; col < c; col++ {
-			result.Set(row, col, rand.NormFloat64())
-		}
-
-	}
-
-	return result
-}
-
 func mapInput(input string) (charToIndex map[rune]int, indexToChar map[int]rune) {
 	charToIndex = make(map[rune]int)
 	indexToChar = make(map[int]rune)
@@ -298,12 +292,6 @@ func mapInput(input string) (charToIndex map[rune]int, indexToChar map[int]rune)
 	}
 
 	return charToIndex, indexToChar
-}
-
-func dot(a, b mat64.Matrix) *mat64.Dense {
-	result := &mat64.Dense{}
-	result.Mul(a, b)
-	return result
 }
 
 func zerosLike(a mat64.Matrix) *mat64.Dense {

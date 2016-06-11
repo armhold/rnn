@@ -6,7 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	//"github.com/davecheney/profile"
+	"github.com/gonum/blas/blas64"
+	"github.com/gonum/blas/cgo"
 )
 
 var (
@@ -18,12 +19,17 @@ var (
 func init() {
 	flag.StringVar(&cpFile, "cp", "rnn.tmp", "specify checkpoint file")
 	flag.StringVar(&inputFile, "i", "input.txt", "specify input training file")
-	flag.IntVar(&maxIter, "m", 1000000, "max iterations")
+	flag.IntVar(&maxIter, "m", 1000000000, "max iterations")
 	flag.Parse()
 }
 
+// run like: CGO_LDFLAGS="-L/usr/local/opt/openblas/lib -lopenblas" go run cmds/rnn/main.go
 func main() {
 	//defer profile.Start(profile.CPUProfile).Stop()
+
+	// NB: for OpenBLAS you will likely need to run rnn with
+	// CGO_LDFLAGS="-L/usr/local/opt/openblas/lib -lopenblas" or equivalent.
+	blas64.Use(cgo.Implementation{})
 
 	inputBytes, err := ioutil.ReadFile(inputFile)
 	if err != nil {
